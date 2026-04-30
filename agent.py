@@ -36,8 +36,8 @@ def _load_env() -> None:
 _load_env()
 _default_client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
 
-MODEL_DEFAULT = "llama-3.1-8b-instant"   # high rate-limit free tier model
-MODEL_LARGE   = "llama-3.3-70b-versatile"  # best quality, lower rate limits
+MODEL_DEFAULT = "llama3-groq-8b-8192-tool-use-preview"   # fine-tuned for tool calls, free-tier friendly
+MODEL_LARGE   = "llama3-groq-70b-8192-tool-use-preview"  # best quality tool-use model
 
 TOOLS = [
     {
@@ -178,6 +178,12 @@ def run_agent(
                 log_fn(f"  Rate limited — waiting {wait}s...")
                 time.sleep(wait)
             except BadRequestError as e:
+                msg = str(e)
+                if "tool_use_failed" in msg:
+                    raise RuntimeError(
+                        "Model failed to format a tool call correctly. "
+                        "Try switching to a tool-use optimised model."
+                    ) from e
                 log_fn(f"\nBad request: {e}\n")
                 raise
 
