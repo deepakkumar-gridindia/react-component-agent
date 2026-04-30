@@ -329,7 +329,13 @@
     async function poll(jobId) {
       try {
         const res = await fetch(`/status/${jobId}?offset=${logOffset}`);
-        if (!res.ok) { stopPoll(); addLog('Status fetch failed', 'err'); setBtn(false); return; }
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          stopPoll();
+          addLog(`Status error ${res.status}: ${body.detail || res.statusText}`, 'err');
+          setBtn(false);
+          return;
+        }
         const data = await res.json();
 
         for (const line of data.logs) {

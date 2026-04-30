@@ -69,8 +69,7 @@ async def generate(req: GenerateRequest):
     job_id = uuid.uuid4().hex
     _jobs[job_id] = {"logs": [], "zip": None, "done": False, "error": None}
 
-    loop = asyncio.get_event_loop()
-    loop.run_in_executor(_executor, _run_job, job_id, req.json_schema, api_key)
+    asyncio.get_running_loop().run_in_executor(_executor, _run_job, job_id, req.json_schema, api_key)
 
     return {"job_id": job_id}
 
