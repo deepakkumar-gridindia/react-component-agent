@@ -150,6 +150,20 @@
       transition: border-color 0.12s;
     }
     input:focus { border-color: var(--accent); }
+    select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 0.82rem;
+      padding: 0.55rem 0.75rem;
+      outline: none;
+      font-family: inherit;
+      cursor: pointer;
+      transition: border-color 0.12s;
+    }
+    select:focus { border-color: var(--accent); }
     .hint { font-size: 0.72rem; color: var(--muted); line-height: 1.5; }
     .hint a { color: var(--accent); text-decoration: none; }
     .hint a:hover { text-decoration: underline; }
@@ -319,6 +333,17 @@
             Optional if the server is pre-configured.<br>
             <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Get a free key at console.groq.com →</a>
           </span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Model</span></div>
+        <div class="field">
+          <select id="modelSelect">
+            <option value="llama-3.1-8b-instant" selected>llama-3.1-8b-instant — fast, free-tier friendly</option>
+            <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile — best quality, lower rate limit</option>
+          </select>
+          <span class="hint">Free Groq keys work best with the 8b model.</span>
         </div>
       </div>
 
@@ -574,19 +599,20 @@ export default function App() {
       catch (e) { clearLog(); addLog('Invalid JSON: ' + e.message, 'err'); return; }
 
       const apiKey = apiKeyEl.value.trim() || undefined;
+      const model = document.getElementById('modelSelect').value;
       clearLog();
       downloadEl.style.display = 'none';
       codeSectionEl.style.display = 'none';
       logOffset = 0;
       stopPoll();
       setBtn(true);
-      addLog('Submitting job…');
+      addLog(`Submitting job (${model})…`);
 
       try {
         const res = await fetch('/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ json_schema: schema, api_key: apiKey }),
+          body: JSON.stringify({ json_schema: schema, api_key: apiKey, model }),
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));

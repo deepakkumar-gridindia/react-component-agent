@@ -29,9 +29,10 @@ def index():
 class GenerateRequest(BaseModel):
     json_schema: dict
     api_key: Optional[str] = None
+    model: Optional[str] = None
 
 
-def _run_job(job_id: str, schema: dict, api_key: str) -> None:
+def _run_job(job_id: str, schema: dict, api_key: str, model: str | None = None) -> None:
     job = _jobs[job_id]
     try:
         with TemporaryDirectory() as tmpdir:
@@ -40,7 +41,7 @@ def _run_job(job_id: str, schema: dict, api_key: str) -> None:
             def log_fn(msg: str) -> None:
                 job["logs"].append(str(msg))
 
-            agent_module.run_agent(schema, output_dir, api_key=api_key, log_fn=log_fn)
+            agent_module.run_agent(schema, output_dir, api_key=api_key, log_fn=log_fn, model=model)
 
             files = list(output_dir.iterdir())
             if not files:
@@ -70,7 +71,7 @@ async def generate(req: GenerateRequest):
     job_id = uuid.uuid4().hex
     _jobs[job_id] = {"logs": [], "zip": None, "files": None, "done": False, "error": None}
 
-    asyncio.get_running_loop().run_in_executor(_executor, _run_job, job_id, req.json_schema, api_key)
+    asyncio.get_running_loop().run_in_executor(_executor, _run_job, job_id, req.json_schema, api_key, req.model)
 
     return {"job_id": job_id}
 

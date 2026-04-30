@@ -36,7 +36,8 @@ def _load_env() -> None:
 _load_env()
 _default_client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
 
-MODEL = "llama-3.3-70b-versatile"
+MODEL_DEFAULT = "llama-3.1-8b-instant"   # high rate-limit free tier model
+MODEL_LARGE   = "llama-3.3-70b-versatile"  # best quality, lower rate limits
 
 TOOLS = [
     {
@@ -138,8 +139,10 @@ def run_agent(
     output_dir: Path,
     api_key: str | None = None,
     log_fn=print,
+    model: str | None = None,
 ) -> None:
     groq_client = Groq(api_key=api_key or os.environ.get("GROQ_API_KEY", ""))
+    model = model or MODEL_DEFAULT
     schema_str = json.dumps(schema, indent=2)
     component_name = schema.get("title", "Component").replace(" ", "")
 
@@ -162,7 +165,7 @@ def run_agent(
         for attempt in range(4):
             try:
                 response = groq_client.chat.completions.create(
-                    model=MODEL,
+                    model=model,
                     max_tokens=4096,
                     tools=TOOLS,
                     messages=_trim_history(messages),
