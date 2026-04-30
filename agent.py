@@ -75,7 +75,7 @@ SYSTEM_PROMPT = """You are an expert React and TypeScript developer. Given a JSO
    - `<Name>Form.tsx`  — A controlled form component (useState) for creating/editing a record.
    - `<Name>List.tsx`  — A list/table component that accepts an array of records.
    - `index.ts`  — barrel export re-exporting everything above.
-3. **Write every file** immediately using the `write_component` tool — do not print code in prose.
+3. **Write ALL files in your FIRST response** by calling `write_component` multiple times simultaneously — one call per file, all at once. Do NOT wait for tool results before writing the next file.
 
 Coding standards:
 - Functional components with typed props (interface Props { … }).
@@ -166,8 +166,9 @@ def run_agent(
             try:
                 response = groq_client.chat.completions.create(
                     model=model,
-                    max_tokens=4096,
+                    max_tokens=8000,
                     tools=TOOLS,
+                    parallel_tool_calls=True,
                     messages=_trim_history(messages),
                 )
                 break
