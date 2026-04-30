@@ -17,7 +17,7 @@ import agent as agent_module
 app = FastAPI(title="React Component Generator")
 _executor = ThreadPoolExecutor(max_workers=4)
 
-# job_id -> {logs, zip, done, error}
+# job_id -> {logs, zip, files, done, error}
 _jobs: dict = {}
 
 
@@ -51,6 +51,7 @@ def _run_job(job_id: str, schema: dict, api_key: str) -> None:
                 for f in files:
                     zf.write(f, f.name)
             job["zip"] = buf.getvalue()
+            job["files"] = {f.name: f.read_text(encoding="utf-8") for f in files}
     except Exception as exc:
         job["error"] = str(exc)
     finally:
@@ -67,7 +68,7 @@ async def generate(req: GenerateRequest):
         )
 
     job_id = uuid.uuid4().hex
-    _jobs[job_id] = {"logs": [], "zip": None, "done": False, "error": None}
+    _jobs[job_id] = {"logs": [], "zip": None, "files": None, "done": False, "error": None}
 
     asyncio.get_running_loop().run_in_executor(_executor, _run_job, job_id, req.json_schema, api_key)
 
@@ -84,6 +85,7 @@ def status(job_id: str, offset: int = 0):
         "error": job["error"],
         "logs": job["logs"][offset:],
         "ready": job["done"] and job["zip"] is not None,
+        "files": job["files"] if job["done"] else None,
     }
 
 

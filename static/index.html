@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>React Component Generator</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
   <style>
     :root {
       --bg: #0d1117;
@@ -17,6 +18,7 @@
       --green: #3fb950;
       --red: #f85149;
       --yellow: #d29922;
+      --blue: #58a6ff;
       --mono: 'Fira Code', 'Cascadia Code', 'Consolas', 'Monaco', monospace;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -86,7 +88,7 @@
       text-transform: uppercase;
       letter-spacing: 0.06em;
     }
-    .btn-row { display: flex; gap: 0.4rem; }
+    .btn-row { display: flex; gap: 0.4rem; align-items: center; }
     .btn {
       padding: 0.28rem 0.65rem;
       border-radius: 5px;
@@ -97,8 +99,16 @@
       color: var(--muted);
       transition: all 0.12s;
       font-family: inherit;
+      white-space: nowrap;
     }
     .btn:hover { background: var(--surface2); color: var(--text); }
+    .btn.stackblitz {
+      background: #1269d3;
+      border-color: #1269d3;
+      color: white;
+      font-weight: 600;
+    }
+    .btn.stackblitz:hover { background: #0f56b3; }
 
     textarea {
       display: block;
@@ -140,11 +150,7 @@
       transition: border-color 0.12s;
     }
     input:focus { border-color: var(--accent); }
-    .hint {
-      font-size: 0.72rem;
-      color: var(--muted);
-      line-height: 1.5;
-    }
+    .hint { font-size: 0.72rem; color: var(--muted); line-height: 1.5; }
     .hint a { color: var(--accent); text-decoration: none; }
     .hint a:hover { text-decoration: underline; }
 
@@ -168,7 +174,6 @@
     .btn-generate:hover:not(:disabled) { background: var(--accent-hover); }
     .btn-generate:disabled { opacity: 0.55; cursor: not-allowed; }
 
-    .log-wrap { padding: 0; }
     .log-area {
       background: var(--bg);
       font-family: var(--mono);
@@ -182,8 +187,8 @@
     }
     .log-area::-webkit-scrollbar { width: 4px; }
     .log-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-    .log-line.ok { color: var(--green); }
-    .log-line.err { color: var(--red); }
+    .log-line.ok   { color: var(--green); }
+    .log-line.err  { color: var(--red); }
     .log-line.warn { color: var(--yellow); }
 
     .btn-download {
@@ -204,6 +209,66 @@
       font-family: inherit;
     }
     .btn-download:hover { opacity: 0.88; }
+
+    /* ── Code viewer ── */
+    #codeSection {
+      display: none;
+      max-width: 1200px;
+      margin: 0 auto 2rem;
+      padding: 0 2rem;
+    }
+    @media (max-width: 860px) { #codeSection { padding: 0 1rem; } }
+
+    .file-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .file-tabs::-webkit-scrollbar { display: none; }
+    .file-tab {
+      padding: 0.5rem 1rem;
+      font-size: 0.78rem;
+      font-family: var(--mono);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.12s;
+    }
+    .file-tab:hover { color: var(--text); }
+    .file-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    .code-wrap {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 10px 10px;
+      overflow: auto;
+      max-height: 540px;
+    }
+    .code-wrap pre[class*="language-"] {
+      margin: 0;
+      border-radius: 0;
+      background: transparent !important;
+      font-size: 0.78rem;
+      line-height: 1.75;
+    }
+    .code-wrap code[class*="language-"] { font-family: var(--mono); }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.65rem 1rem;
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 10px 10px 0 0;
+      background: var(--surface2);
+    }
 
     .spinner {
       width: 16px; height: 16px;
@@ -239,7 +304,7 @@
           <button class="btn" id="clearBtn">Clear</button>
         </div>
       </div>
-      <textarea id="schema" spellcheck="false" placeholder='Paste your JSON schema here…'></textarea>
+      <textarea id="schema" spellcheck="false" placeholder="Paste your JSON schema here…"></textarea>
     </div>
 
     <div class="right">
@@ -280,6 +345,27 @@
     </div>
   </main>
 
+  <!-- Generated files code viewer -->
+  <div id="codeSection">
+    <div class="code-header">
+      <span class="panel-title">Generated Files</span>
+      <div class="btn-row">
+        <button class="btn" id="copyBtn">Copy</button>
+        <button class="btn stackblitz" id="stackblitzBtn">
+          ⚡ Open in StackBlitz
+        </button>
+      </div>
+    </div>
+    <div class="file-tabs" id="fileTabs"></div>
+    <div class="code-wrap" id="codeWrap"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-tsx.min.js"></script>
+  <script src="https://unpkg.com/@stackblitz/sdk/bundles/sdk.umd.js"></script>
+
   <script>
     const EXAMPLE = {"$schema":"http://json-schema.org/draft-07/schema#","title":"Employee","type":"object","properties":{"id":{"type":"string"},"firstName":{"type":"string"},"lastName":{"type":"string"},"email":{"type":"string","format":"email"},"department":{"type":"string","enum":["Engineering","Design","Marketing","HR","Finance"]},"role":{"type":"string","enum":["junior","mid","senior","lead","manager"]},"salary":{"type":"number","minimum":0},"startDate":{"type":"string","format":"date"},"isActive":{"type":"boolean"},"skills":{"type":"array","items":{"type":"string"}}},"required":["id","firstName","lastName","email","department","role"]};
 
@@ -288,6 +374,9 @@
     const logAreaEl  = document.getElementById('logArea');
     const generateEl = document.getElementById('generateBtn');
     const downloadEl = document.getElementById('downloadBtn');
+    const codeSectionEl = document.getElementById('codeSection');
+    const fileTabsEl = document.getElementById('fileTabs');
+    const codeWrapEl = document.getElementById('codeWrap');
 
     document.getElementById('loadExample').onclick = () => {
       schemaEl.value = JSON.stringify(EXAMPLE, null, 2);
@@ -301,13 +390,9 @@
       document.getElementById('toggleKey').textContent = keyVisible ? 'Hide' : 'Show';
     };
 
-    function clearLog() {
-      logAreaEl.innerHTML = '';
-    }
+    function clearLog() { logAreaEl.innerHTML = ''; }
     function addLog(msg, cls = '') {
-      if (logAreaEl.querySelector('span') && !logAreaEl.querySelector('.log-line')) {
-        logAreaEl.innerHTML = '';
-      }
+      if (logAreaEl.querySelector('span') && !logAreaEl.querySelector('.log-line')) logAreaEl.innerHTML = '';
       const d = document.createElement('div');
       d.className = 'log-line' + (cls ? ' ' + cls : '');
       d.textContent = msg;
@@ -322,9 +407,123 @@
         : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Generate Components';
     }
 
+    // ── Code viewer ────────────────────────────────────────────────
+    let _files = {};
+    let _activeFile = '';
+
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function renderCode() {
+      const content = _files[_activeFile] || '';
+      const lang = _activeFile.endsWith('.tsx') ? 'tsx'
+                 : _activeFile.endsWith('.ts')  ? 'typescript'
+                 : 'javascript';
+      codeWrapEl.innerHTML = `<pre class="language-${lang}"><code class="language-${lang}">${escHtml(content)}</code></pre>`;
+      if (window.Prism) Prism.highlightAllUnder(codeWrapEl);
+    }
+
+    function renderTabs() {
+      fileTabsEl.innerHTML = '';
+      const order = ['types.ts', 'index.ts'];
+      const names = Object.keys(_files).sort((a, b) => {
+        const ai = order.indexOf(a), bi = order.indexOf(b);
+        if (ai !== -1 && bi !== -1) return ai - bi;
+        if (ai !== -1) return -1;
+        if (bi !== -1) return 1;
+        return a.localeCompare(b);
+      });
+      names.forEach(name => {
+        const t = document.createElement('button');
+        t.className = 'file-tab' + (name === _activeFile ? ' active' : '');
+        t.textContent = name;
+        t.onclick = () => { _activeFile = name; renderTabs(); renderCode(); };
+        fileTabsEl.appendChild(t);
+      });
+    }
+
+    function showCodeViewer(files) {
+      _files = files;
+      const names = Object.keys(files);
+      // default to first Card or List file
+      _activeFile = names.find(n => n.includes('Card')) || names.find(n => n.includes('List')) || names[0];
+      codeSectionEl.style.display = 'block';
+      renderTabs();
+      renderCode();
+      codeSectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // copy active file
+    document.getElementById('copyBtn').onclick = () => {
+      navigator.clipboard.writeText(_files[_activeFile] || '').then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+      });
+    };
+
+    // ── StackBlitz ─────────────────────────────────────────────────
+    document.getElementById('stackblitzBtn').onclick = () => {
+      const names = Object.keys(_files);
+      const listFile = names.find(n => n.includes('List'));
+      const baseName = listFile ? listFile.replace('List.tsx', '') : 'Component';
+
+      const appTsx = `import React from 'react';
+import { ${baseName}List } from './index';
+import type { ${baseName} } from './types';
+
+const SAMPLE_DATA: ${baseName}[] = [];
+
+export default function App() {
+  return (
+    <div className="min-h-screen bg-gray-50 p-8">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">${baseName} Preview</h1>
+      <${baseName}List items={SAMPLE_DATA} />
+      <p className="mt-4 text-sm text-gray-500">
+        Add items to SAMPLE_DATA in App.tsx to see the components in action.
+      </p>
+    </div>
+  );
+}`;
+
+      const srcFiles = Object.fromEntries(
+        Object.entries(_files).map(([k, v]) => [`src/${k}`, v])
+      );
+
+      StackBlitzSDK.openProject({
+        title: `${baseName} Components`,
+        description: 'Generated React/TypeScript components',
+        template: 'node',
+        files: {
+          'package.json': JSON.stringify({
+            name: baseName.toLowerCase() + '-components',
+            private: true, version: '0.0.0', type: 'module',
+            scripts: { dev: 'vite', build: 'tsc && vite build', preview: 'vite preview' },
+            dependencies: { react: '^18.3.1', 'react-dom': '^18.3.1' },
+            devDependencies: {
+              '@types/react': '^18.3.1', '@types/react-dom': '^18.3.1',
+              '@vitejs/plugin-react': '^4.3.1',
+              autoprefixer: '^10.4.20', postcss: '^8.4.47',
+              tailwindcss: '^3.4.14', typescript: '^5.6.2', vite: '^5.4.10',
+            },
+          }, null, 2),
+          'index.html': `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>${baseName} Preview</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>`,
+          'vite.config.ts': `import { defineConfig } from 'vite'\nimport react from '@vitejs/plugin-react'\nexport default defineConfig({ plugins: [react()] })`,
+          'tailwind.config.js': `export default { content: ['./index.html','./src/**/*.{ts,tsx}'], theme: { extend: {} }, plugins: [] }`,
+          'postcss.config.js': `export default { plugins: { tailwindcss: {}, autoprefixer: {} } }`,
+          'tsconfig.json': JSON.stringify({ compilerOptions: { target:'ES2020', useDefineForClassFields:true, lib:['ES2020','DOM','DOM.Iterable'], module:'ESNext', skipLibCheck:true, moduleResolution:'bundler', allowImportingTsExtensions:true, isolatedModules:true, moduleDetection:'force', noEmit:true, jsx:'react-jsx', strict:true }, include:['src'] }, null, 2),
+          'src/index.css': '@tailwind base;\n@tailwind components;\n@tailwind utilities;\n',
+          'src/main.tsx': `import React from 'react'\nimport ReactDOM from 'react-dom/client'\nimport App from './App'\nimport './index.css'\nReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>)`,
+          'src/App.tsx': appTsx,
+          ...srcFiles,
+        },
+      }, { newWindow: true, openFile: 'src/App.tsx' });
+    };
+
+    // ── Polling ────────────────────────────────────────────────────
     let pollTimer = null;
     let logOffset = 0;
-    let currentJobId = null;
 
     async function poll(jobId) {
       try {
@@ -337,7 +536,6 @@
           return;
         }
         const data = await res.json();
-
         for (const line of data.logs) {
           logOffset++;
           const cls = line.startsWith('  ✓') ? 'ok'
@@ -345,16 +543,16 @@
                     : '';
           addLog(line, cls);
         }
-
         if (data.done) {
           stopPoll();
           setBtn(false);
           if (data.error) {
             addLog('Error: ' + data.error, 'err');
           } else if (data.ready) {
-            addLog('All done — click below to download.', 'ok');
+            addLog('All done — see the generated files below.', 'ok');
             downloadEl.style.display = 'flex';
             downloadEl.onclick = () => { window.location.href = `/download/${jobId}`; };
+            if (data.files) showCodeViewer(data.files);
           }
         }
       } catch (e) {
@@ -371,18 +569,16 @@
     generateEl.onclick = async () => {
       const raw = schemaEl.value.trim();
       if (!raw) { clearLog(); addLog('Please paste a JSON schema first.', 'err'); return; }
-
       let schema;
       try { schema = JSON.parse(raw); }
       catch (e) { clearLog(); addLog('Invalid JSON: ' + e.message, 'err'); return; }
 
       const apiKey = apiKeyEl.value.trim() || undefined;
-
       clearLog();
       downloadEl.style.display = 'none';
+      codeSectionEl.style.display = 'none';
       logOffset = 0;
       stopPoll();
-
       setBtn(true);
       addLog('Submitting job…');
 
@@ -399,7 +595,6 @@
           return;
         }
         const { job_id } = await res.json();
-        currentJobId = job_id;
         addLog('Job started. Waiting for agent…');
         pollTimer = setInterval(() => poll(job_id), 1000);
       } catch (e) {
