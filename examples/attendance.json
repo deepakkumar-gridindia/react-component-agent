@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AttendanceRecord",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "employeeId": { "type": "string" },
+    "employeeName": { "type": "string" },
+    "date": { "type": "string", "format": "date" },
+    "checkIn": { "type": "string", "format": "time" },
+    "checkOut": { "type": "string", "format": "time" },
+    "status": {
+      "type": "string",
+      "enum": ["present", "absent", "late", "half-day", "on-leave"]
+    },
+    "hoursWorked": { "type": "number", "minimum": 0, "maximum": 24 },
+    "notes": { "type": "string" }
+  },
+  "required": ["id", "employeeId", "employeeName", "date", "status"]
+}
